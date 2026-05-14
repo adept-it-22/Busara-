@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Busara ↔ VICIDIAL — Technical Demo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#0d0f12;--sf:#161920;--sf2:#1e2229;--bd:#2a2f38;--bd2:#343b47;
+  --tx:#e8eaf0;--tx2:#8b92a0;--tx3:#555e6e;
+  --ac:#4f8ef7;--gr:#3ecf8e;--am:#f5a623;--re:#f25858;--te:#2dd4bf;
+  --mo:'IBM Plex Mono',monospace;--sn:'IBM Plex Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sn);background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.6}
+.topbar{height:52px;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 1.5rem;gap:12px;position:sticky;top:0;z-index:200}
+.logo{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.demo-pill{font-size:11px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.3);color:var(--am);padding:2px 10px;border-radius:20px;font-family:var(--mo)}
+.nav{display:flex;padding:0 1.5rem;background:var(--sf);border-bottom:1px solid var(--bd);overflow-x:auto}
+.ntab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--tx2);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--sn);white-space:nowrap}
+.ntab:hover{color:var(--tx)}.ntab.active{color:var(--ac);border-bottom-color:var(--ac)}
+.main{padding:1.5rem;max-width:1000px;margin:0 auto;width:100%}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.metric{background:var(--sf2);border-radius:8px;padding:1rem 1.25rem}
+.metric-val{font-family:var(--mo);font-size:28px;font-weight:500;line-height:1;margin-bottom:4px}
+.metric-lbl{font-size:12px;color:var(--tx2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:0 14px;height:34px;font-size:12px;font-family:var(--sn);font-weight:500;border:1px solid var(--bd2);border-radius:6px;cursor:pointer;background:var(--sf2);color:var(--tx);transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--bd)}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-g{background:rgba(62,207,142,.1);border-color:rgba(62,207,142,.3);color:var(--gr)}
+.btn-g:hover:not(:disabled){background:rgba(62,207,142,.18)}
+.btn-b{background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.3);color:var(--ac)}
+.btn-b:hover:not(:disabled){background:rgba(79,142,247,.18)}
+.btn-t{background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.3);color:var(--te)}
+.btn-t:hover:not(:disabled){background:rgba(45,212,191,.18)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem;align-items:center}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;font-family:var(--mo)}
+.b-ok{background:rgba(62,207,142,.12);color:var(--gr);border:1px solid rgba(62,207,142,.3)}
+.b-er{background:rgba(242,88,88,.12);color:var(--re);border:1px solid rgba(242,88,88,.3)}
+.b-du{background:rgba(255,255,255,.06);color:var(--tx2);border:1px solid var(--bd2)}
+.b-bl{background:rgba(79,142,247,.12);color:var(--ac);border:1px solid rgba(79,142,247,.3)}
+.b-te{background:rgba(45,212,191,.12);color:var(--te);border:1px solid rgba(45,212,191,.3)}
+.b-gray{background:var(--sf2);color:var(--tx2);border:1px solid var(--bd)}
+.notice{border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:1rem;line-height:1.5}
+.nb{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:#8db8f5}
+.logbox{background:var(--bg);border:1px solid var(--bd);border-radius:6px;font-family:var(--mo);font-size:12px;padding:10px;max-height:260px;overflow-y:auto;line-height:1.6}
+.le{display:flex;gap:10px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.le:last-child{border-bottom:none}
+.log-ts{color:var(--tx3);white-space:nowrap;min-width:88px;font-size:11px}
+.c-ok{color:var(--gr)}.c-er{color:var(--re)}.c-in{color:var(--ac)}.c-wa{color:var(--am)}.c-du{color:var(--tx2)}.c-te{color:var(--te)}
+.prog-wrap{margin-top:10px;display:none}
+.prog-label{font-size:11px;color:var(--tx2);margin-bottom:5px;font-family:var(--mo)}
+.prog-track{height:4px;background:var(--sf2);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width .35s;background:var(--ac)}
+.api-block{background:var(--bg);border:1px solid var(--bd);border-radius:6px;font-family:var(--mo);font-size:11px;line-height:1.9;padding:10px 12px;word-break:break-all;margin-bottom:8px}
+.api-block.success{border-left:3px solid var(--gr)}.api-block.error{border-left:3px solid var(--re)}.api-block.duplicate{border-left:3px solid var(--tx3)}.api-block.info{border-left:3px solid var(--ac)}
+.api-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3);margin-bottom:5px}
+.sheet-wrap{overflow-x:auto;border:1px solid var(--bd);border-radius:6px}
+.sheet-tbl{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mo)}
+.sheet-tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx2);padding:7px 10px;border-bottom:1px solid var(--bd);background:var(--sf2);text-align:left;font-weight:500}
+.sheet-tbl td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
+.sheet-tbl tr:last-child td{border-bottom:none}
+.sheet-tbl tr.old td{color:var(--tx3)}
+.sheet-tbl tr.new-row td{background:rgba(79,142,247,.06)}
+.sheet-tbl tr.uploading td{background:rgba(79,142,247,.12);animation:blink .7s infinite}
+.sheet-tbl tr.done-ok td{background:rgba(62,207,142,.07)}
+.sheet-tbl tr.done-er td{background:rgba(242,88,88,.07)}
+.sheet-tbl tr.done-du td{background:rgba(255,255,255,.03)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.55}}
+.state-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;align-items:baseline}
+.state-row:last-child{border-bottom:none}
+.state-key{color:var(--tx2);font-family:var(--mo);min-width:150px;flex-shrink:0}
+.state-val{font-family:var(--mo);color:var(--tx)}
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:1.25rem}
+.flow-node{background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:500;white-space:nowrap;transition:all .3s}
+.flow-node.active{border-color:var(--ac);color:var(--ac);background:rgba(79,142,247,.1)}
+.flow-node.done{border-color:var(--gr);color:var(--gr);background:rgba(62,207,142,.08)}
+.flow-arrow{color:var(--tx3);padding:0 6px;font-size:13px}
+.status-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.status-row:last-child{border-bottom:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+code{font-family:var(--mo);font-size:12px;color:var(--ac);background:rgba(79,142,247,.1);padding:1px 5px;border-radius:3px}
+.dim{color:var(--tx3)}
+@media(max-width:600px){.metrics{grid-template-columns:1fr 1fr}.g2,.g3{grid-template-columns:1fr}.flow{flex-direction:column;align-items:flex-start}.flow-arrow{transform:rotate(90deg);padding:4px 0}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>Busara ↔ VICIDIAL Auto Transfer</div>
+  <span class="demo-pill">LIVE DEMO</span>
+  <span style="margin-left:auto;font-size:12px;color:var(--tx2)">Adept Technologies · Nairobi</span>
+</div>
+
+<div class="nav">
+  <button class="ntab active" onclick="showTab('status')">&#9679; Status</button>
+  <button class="ntab" onclick="showTab('upload')">&#8679; Upload</button>
+  <button class="ntab" onclick="showTab('api')">&#10022; API inspector</button>
+  <button class="ntab" onclick="showTab('state')">&#128193; State</button>
+  <button class="ntab" onclick="showTab('report')">&#8681; Report</button>
+</div>
+
+<div class="main">
+
+<!-- STATUS -->
+<div class="panel active" id="tab-status">
+  <div class="notice nb">Simulated demo — all API responses use real VICIDIAL Non-Agent API format. Server: <code>http://YOUR_PUBLIC_IP/vicidial/non_agent_api.php</code></div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-val" id="m-ptr" style="color:var(--te)">43</div><div class="metric-lbl">Row pointer</div></div>
+    <div class="metric"><div class="metric-val" id="m-tot" style="color:var(--tx)">41</div><div class="metric-lbl">Total uploaded</div></div>
+    <div class="metric"><div class="metric-val" id="m-today" style="color:var(--gr)">0</div><div class="metric-lbl">Uploaded today</div></div>
+    <div class="metric"><div class="metric-val" id="m-err" style="color:var(--re)">1</div><div class="metric-lbl">Total errors</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.85rem">System state</div>
+    <div class="status-row"><span>&#8679; Last upload</span><strong id="s-lu" style="margin-left:auto;font-family:var(--mo);font-size:12px">2025-05-14 17:00:09 EAT</strong></div>
+    <div class="status-row"><span>&#8681; Last report</span><strong id="s-lr" style="margin-left:auto;font-family:var(--mo);font-size:12px">2025-05-14 17:30:01 EAT</strong></div>
+    <div class="status-row"><span>Sheet ID</span><strong id="s-sid" style="margin-left:auto;font-family:var(--mo);font-size:12px;color:var(--ac)">1BxiMVs0XRA5nFMdKvBdBZjgm...</strong></div>
+    <div class="status-row"><span>Duplicates skipped</span><strong style="margin-left:auto;font-family:var(--mo);font-size:12px">2</strong></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.75rem">Recent activity</div>
+    <div class="logbox" id="status-log">
+      <div class="le"><span class="log-ts">17:30:01</span><span class="c-ok">[report] SUCCESS — busara_dispo_20250514.csv saved, 28 lines</span></div>
+      <div class="le"><span class="log-ts">17:00:09</span><span class="c-ok">[upload] 0712345689 — SUCCESS: add_lead LEAD HAS BEEN ADDED - 0712345689|busara_auto|101|193728|-0</span></div>
+      <div class="le"><span class="log-ts">17:00:08</span><span class="c-du">[upload] 0712345688 — ERROR: add_lead DUPLICATE PHONE NUMBER IN LIST - 0712345688|101|193690</span></div>
+      <div class="le"><span class="log-ts">17:00:07</span><span class="c-ok">[upload] 0712345687 — SUCCESS: add_lead LEAD HAS BEEN ADDED - 0712345687|busara_auto|101|193727|-0</span></div>
+      <div class="le"><span class="log-ts">17:00:06</span><span class="c-er">[upload] 071234 — ERROR: add_lead INVALID PHONE NUMBER LENGTH - 071234|busara_auto</span></div>
+      <div class="le"><span class="log-ts">17:00:05</span><span class="c-ok">[upload] 0712345686 — SUCCESS: add_lead LEAD HAS BEEN ADDED - 0712345686|busara_auto|101|193726|-0</span></div>
+      <div class="le"><span class="log-ts">16:00:01</span><span class="c-in">[system] Sheet fetched — 43 rows, pointer was 38, 5 new rows identified</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.85rem">Cron schedule</div>
+    <div class="g2">
+      <div class="api-block info"><div class="api-lbl">upload — daily 17:00 EAT</div>0 14 * * * python3 transfer.py --upload<br><span class="dim"># 14:00 UTC = 17:00 EAT</span></div>
+      <div class="api-block info"><div class="api-lbl">report — daily 17:30 EAT</div>30 14 * * * python3 transfer.py --report<br><span class="dim"># 14:30 UTC = 17:30 EAT</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<div class="panel" id="tab-upload">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.85rem">Data flow</div>
+    <div class="flow" id="flow">
+      <div class="flow-node" id="fn0">Google Sheet</div><div class="flow-arrow">&#8594;</div>
+      <div class="flow-node" id="fn1">CSV export</div><div class="flow-arrow">&#8594;</div>
+      <div class="flow-node" id="fn2">Find new rows</div><div class="flow-arrow">&#8594;</div>
+      <div class="flow-node" id="fn3">add_lead loop</div><div class="flow-arrow">&#8594;</div>
+      <div class="flow-node" id="fn4">Parse response</div><div class="flow-arrow">&#8594;</div>
+      <div class="flow-node" id="fn5">Update pointer</div><div class="flow-arrow">&#8594;</div>
+      <div class="flow-node" id="fn6">Email summary</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Google Sheet — participant responses</div>
+      <div style="display:flex;gap:6px"><span class="badge b-bl">48 rows total</span><span class="badge b-te" id="new-badge">5 new</span></div>
+    </div>
+    <div class="sheet-wrap"><table class="sheet-tbl"><thead><tr><th>#</th><th>Timestamp</th><th>Phone</th><th>First name</th><th>Last name</th><th>Status</th></tr></thead><tbody id="sheet-body"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Upload to VICIDIAL</div><div id="result-badges" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>
+    <div class="btn-row">
+      <button class="btn btn-t" id="upload-btn" onclick="runUpload()">Run upload now</button>
+      <button class="btn" id="reset-btn" onclick="resetUpload()" style="display:none">Reset demo</button>
+    </div>
+    <div class="prog-wrap" id="upload-prog"><div class="prog-label" id="upload-lbl">Starting...</div><div class="prog-track"><div class="prog-fill" id="upload-fill" style="width:0%"></div></div></div>
+    <div class="logbox" id="upload-log" style="margin-top:.75rem"><div class="le"><span class="log-ts">—</span><span class="c-in">Click "Run upload now" to simulate the upload.</span></div></div>
+  </div>
+</div>
+
+<!-- API INSPECTOR -->
+<div class="panel" id="tab-api">
+  <div class="notice nb">Exact HTTP GET calls sent to <code>/vicidial/non_agent_api.php</code>. Responses are real VICIDIAL format — parsed to SUCCESS / DUPLICATE / ERROR.</div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.85rem">Fire a single add_lead call</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:4px">phone_number</div>
+        <input id="a-phone" type="text" value="0712345699" style="width:100%;height:34px;padding:0 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;color:var(--tx);font-family:var(--mo);font-size:12px;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:4px">first_name</div>
+        <input id="a-name" type="text" value="Amina" style="width:100%;height:34px;padding:0 10px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;color:var(--tx);font-family:var(--sn);font-size:12px;outline:none">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-b" onclick="fireAPI('ok')">SUCCESS response</button>
+      <button class="btn" onclick="fireAPI('dup')">DUPLICATE response</button>
+      <button class="btn" onclick="fireAPI('err')">ERROR response</button>
+    </div>
+    <div id="api-out" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.85rem">Response parsing logic</div>
+    <div class="logbox">
+      <div class="le"><span class="c-ok">starts with "SUCCESS:"     → status = SUCCESS, advance pointer</span></div>
+      <div class="le"><span class="c-du">contains "DUPLICATE"      → status = DUPLICATE, advance pointer</span></div>
+      <div class="le"><span class="c-er">starts with "ERROR:"      → status = ERROR, advance pointer, log</span></div>
+      <div class="le"><span class="c-wa">HTTP timeout / network    → status = ERROR, retry next cron run</span></div>
+      <div class="le"><span class="c-in">pointer advances in ALL cases — no infinite retry loop</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.75rem">API user requirements (VICIDIAL admin must set)</div>
+    <div class="logbox">
+      <div class="le"><span class="c-in">user_level >= 8</span></div>
+      <div class="le"><span class="c-in">modify_leads = 1</span></div>
+      <div class="le"><span class="c-in">list_exists_check = Y  (validates list_id before inserting)</span></div>
+      <div class="le"><span class="c-in">duplicate_check = DUPLIST  (configurable: DUPCAMP, DUPSYS)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATE -->
+<div class="panel" id="tab-state">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">state.json</div>
+      <span style="font-size:11px;color:var(--tx2);font-family:var(--mo)">/var/www/html/busara/data/state.json</span>
+    </div>
+    <div class="state-row"><span class="state-key">row_pointer</span><span class="state-val" id="st-ptr">43</span></div>
+    <div class="state-row"><span class="state-key">last_upload</span><span class="state-val">2025-05-14 17:00:09 EAT</span></div>
+    <div class="state-row"><span class="state-key">last_report</span><span class="state-val">2025-05-14 17:30:01 EAT</span></div>
+    <div class="state-row"><span class="state-key">sheet_id</span><span class="state-val" style="color:var(--ac)">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span></div>
+    <div class="state-row"><span class="state-key">total_uploaded</span><span class="state-val" id="st-tot">41</span></div>
+    <div class="state-row"><span class="state-key">total_duplicates</span><span class="state-val" id="st-dup">2</span></div>
+    <div class="state-row"><span class="state-key">total_errors</span><span class="state-val" id="st-err">1</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">transfer.log — NDJSON</div><span style="font-size:11px;color:var(--tx2);font-family:var(--mo)">/var/www/html/busara/data/transfer.log</span></div>
+    <div class="logbox">
+      <div class="le"><span class="c-ok">{"ts":"2025-05-14 17:00:09","type":"upload","row_index":42,"phone":"0712345689","fname":"Moses","status":"SUCCESS","response":"SUCCESS: add_lead LEAD HAS BEEN ADDED - 0712345689|busara_auto|101|193728|-0"}</span></div>
+      <div class="le"><span class="c-du">{"ts":"2025-05-14 17:00:08","type":"upload","row_index":41,"phone":"0712345688","fname":"Jane","status":"DUPLICATE","response":"ERROR: add_lead DUPLICATE PHONE NUMBER IN LIST - 0712345688|101|193690"}</span></div>
+      <div class="le"><span class="c-ok">{"ts":"2025-05-14 17:00:07","type":"upload","row_index":40,"phone":"0712345687","fname":"Ali","status":"SUCCESS","response":"SUCCESS: add_lead LEAD HAS BEEN ADDED - 0712345687|busara_auto|101|193727|-0"}</span></div>
+      <div class="le"><span class="c-er">{"ts":"2025-05-14 17:00:06","type":"upload","row_index":39,"phone":"071234","fname":"Bad","status":"ERROR","response":"ERROR: add_lead INVALID PHONE NUMBER LENGTH - 071234|busara_auto"}</span></div>
+      <div class="le"><span class="c-ok">{"ts":"2025-05-14 17:00:05","type":"upload","row_index":38,"phone":"0712345686","fname":"Wanjiru","status":"SUCCESS","response":"SUCCESS: add_lead LEAD HAS BEEN ADDED - 0712345686|busara_auto|101|193726|-0"}</span></div>
+      <div class="le"><span class="c-in">{"ts":"2025-05-14 17:30:01","type":"report","status":"SUCCESS","notes":"Saved reports/busara_dispo_20250514.csv, 28 lines"}</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.75rem">Atomic write — crash safety</div>
+    <div class="logbox">
+      <div class="le"><span class="c-te">1. json.dump() → state.json.tmp</span></div>
+      <div class="le"><span class="c-te">2. shutil.move(state.json.tmp, state.json)   # atomic on POSIX</span></div>
+      <div class="le"><span class="c-in">pointer advances per-row inside the loop, not per-batch</span></div>
+      <div class="le"><span class="c-in">crash on row N: restart picks up from row N, not row 0</span></div>
+      <div class="le"><span class="c-du">reset: python3 transfer.py --reset  (CLI only — not exposed in UI)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div class="panel" id="tab-report">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.85rem">call_dispo_report — request</div>
+    <div class="api-block info">
+      <div class="api-lbl">GET /vicidial/non_agent_api.php</div>
+      &nbsp;&nbsp;?function=<span style="color:var(--te)">call_dispo_report</span><br>
+      &nbsp;&nbsp;&amp;campaigns=<span style="color:var(--te)">BUSARA2025</span><br>
+      &nbsp;&nbsp;&amp;query_date=<span style="color:var(--te)" id="r-from">2025-05-14</span><br>
+      &nbsp;&nbsp;&amp;end_date=<span style="color:var(--te)" id="r-to">2025-05-14</span><br>
+      &nbsp;&nbsp;&amp;status_breakdown=<span style="color:var(--te)">1</span><br>
+      &nbsp;&nbsp;&amp;user=<span class="dim">****</span>&amp;pass=<span class="dim">****</span>&amp;source=busara_auto
+    </div>
+    <div class="btn-row"><button class="btn btn-g" id="rpt-btn" onclick="runReport()">Call call_dispo_report</button></div>
+    <div id="rpt-out" style="display:none;margin-top:10px">
+      <div class="api-block success"><div class="api-lbl">raw response</div>CAMPAIGN,TOTAL CALLS,A,NA,NI,CALLBK,DROP<br>BUSARA2025,28,18,5,2,2,1<br>TOTAL,28,18,5,2,2,1</div>
+      <div class="g2">
+        <div class="api-block info"><div class="api-lbl">saved to disk</div><span style="color:var(--ac)">reports/busara_dispo_20250514.csv</span><br><span class="dim">312 bytes · 3 lines</span></div>
+        <div class="api-block info"><div class="api-lbl">email dispatched</div>To: admin@adepttech.co.ke<br><span class="dim">CSV attached (312 bytes)</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:.75rem">Error handling</div>
+    <div class="logbox">
+      <div class="le"><span class="c-er">ERROR: call_dispo_report USER DOES NOT HAVE PERMISSION</span></div>
+      <div class="le"><span class="c-du">&nbsp;&nbsp;→ logged + email alert · no crash · retry next run</span></div>
+      <div class="le"><span class="c-er">ERROR: call_dispo_report INVALID OR MISSING CAMPAIGNS</span></div>
+      <div class="le"><span class="c-du">&nbsp;&nbsp;→ check VICI_CAMPAIGN in config.py</span></div>
+      <div class="le"><span class="c-wa">HTTP timeout after 15s</span></div>
+      <div class="le"><span class="c-du">&nbsp;&nbsp;→ logged as ERROR · file not saved · email alert sent</span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const ROWS=[
+  {i:44,ts:'14/05 08:12',ph:'0712345686',fn:'Wanjiru',ln:'Njoki',   old:true, res:'ok'},
+  {i:45,ts:'14/05 09:34',ph:'0712345687',fn:'Ali',    ln:'Hassan',  old:true, res:'ok'},
+  {i:46,ts:'14/05 11:00',ph:'0712345688',fn:'Jane',   ln:'Muthoni', old:true, res:'ok'},
+  {i:47,ts:'14/05 13:22',ph:'0712345689',fn:'Moses',  ln:'Ouma',    old:false,res:'ok'},
+  {i:48,ts:'14/05 14:45',ph:'0712345690',fn:'Amina',  ln:'Odhiambo',old:false,res:'ok'},
+  {i:49,ts:'14/05 15:10',ph:'071234',    fn:'Bad',    ln:'Number',  old:false,res:'err'},
+  {i:50,ts:'14/05 16:55',ph:'0712345687',fn:'Dup',    ln:'Check',   old:false,res:'dup'},
+  {i:51,ts:'14/05 16:58',ph:'0712345691',fn:'Peter',  ln:'Otieno',  old:false,res:'ok'},
+];
+
+function showTab(t){
+  document.querySelectorAll('.ntab').forEach(e=>e.classList.toggle('active',e.getAttribute('onclick').includes("'"+t+"'")));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+}
+function eatTime(){return new Date().toLocaleTimeString('en-KE',{timeZone:'Africa/Nairobi',hour12:false});}
+function logLine(el,cls,msg){
+  if(el.querySelector('.c-in')?.textContent.includes('Click'))el.innerHTML='';
+  el.innerHTML+=`<div class="le"><span class="log-ts">${eatTime()}</span><span class="${cls}">${msg}</span></div>`;
+  el.scrollTop=el.scrollHeight;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function badge(cls,txt){return`<span class="badge ${cls}">${txt}</span>`;}
+
+function buildSheet(highlight){
+  document.getElementById('sheet-body').innerHTML=ROWS.map(r=>{
+    const cls=highlight?(r.old?'old':'new-row'):'';
+    const st=r.old?badge('b-gray','uploaded'):badge('b-te','pending');
+    return`<tr class="${cls}" id="srow-${r.i}"><td>${r.i}</td><td>${r.ts}</td><td>${r.ph}</td><td>${r.fn}</td><td>${r.ln}</td><td id="ss-${r.i}">${st}</td></tr>`;
+  }).join('');
+}
+buildSheet(false);
+
+const FNODES=['fn0','fn1','fn2','fn3','fn4','fn5','fn6'];
+function setNode(i){FNODES.forEach((id,j)=>{const e=document.getElementById(id);if(!e)return;e.className='flow-node'+(j<i?' done':j===i?' active':'');});}
+
+let uploading=false;
+async function runUpload(){
+  if(uploading)return;uploading=true;
+  document.getElementById('upload-btn').disabled=true;
+  document.getElementById('reset-btn').style.display='none';
+  const prog=document.getElementById('upload-prog'),lbl=document.getElementById('upload-lbl'),
+        fill=document.getElementById('upload-fill'),log=document.getElementById('upload-log'),
+        bdg=document.getElementById('result-badges');
+  prog.style.display='block';log.innerHTML='';bdg.innerHTML='';fill.style.background='var(--ac)';
+  buildSheet(true);setNode(0);lbl.textContent='Fetching Google Sheet...';fill.style.width='8%';
+  await sleep(700);
+  logLine(log,'c-in','GET spreadsheets/d/{ID}/export?format=csv');
+  await sleep(500);logLine(log,'c-ok','Sheet fetched — 51 rows total, 5 cols');
+  setNode(1);await sleep(400);setNode(2);fill.style.width='20%';
+  logLine(log,'c-in','Row pointer = 43. New rows = 8 (indices 43–50)');
+  logLine(log,'c-in','Filtering: 3 already-processed rows skipped');await sleep(500);
+  setNode(3);
+  const newRows=ROWS.filter(r=>!r.old);
+  let ok=0,er=0,du=0,ptr=43;
+  for(let i=0;i<newRows.length;i++){
+    const r=newRows[i];
+    const el=document.getElementById('srow-'+r.i),st=document.getElementById('ss-'+r.i);
+    if(el)el.className='uploading';
+    lbl.textContent=`Uploading row ${i+1}/${newRows.length} — ${r.fn} ${r.ln} (${r.ph})`;
+    fill.style.width=Math.round(20+((i+0.5)/newRows.length)*60)+'%';
+    await sleep(650);setNode(4);await sleep(250);
+    let cls,resp,bclass,btext;
+    if(r.res==='ok'){ok++;ptr++;resp=`SUCCESS: add_lead LEAD HAS BEEN ADDED - ${r.ph.replace(/\D/g,'')}|busara_auto|101|${193728+ok}|-0`;cls='c-ok';bclass='done-ok';btext=badge('b-ok','OK');}
+    else if(r.res==='dup'){du++;ptr++;resp=`ERROR: add_lead DUPLICATE PHONE NUMBER IN LIST - ${r.ph.replace(/\D/g,'')}|101|193687`;cls='c-du';bclass='done-du';btext=badge('b-du','DUP');}
+    else{er++;ptr++;resp=`ERROR: add_lead INVALID PHONE NUMBER LENGTH - ${r.ph}|busara_auto`;cls='c-er';bclass='done-er';btext=badge('b-er','ERR');}
+    if(el)el.className=bclass;if(st)st.innerHTML=btext;
+    logLine(log,cls,`[${ptr}] ${r.ph} — ${resp.substring(0,72)}`);
+    setNode(5);
+    ['m-ptr','st-ptr'].forEach(id=>document.getElementById(id).textContent=String(ptr));
+    fill.style.width=Math.round(20+((i+1)/newRows.length)*60)+'%';await sleep(250);
+  }
+  fill.style.width='90%';setNode(6);await sleep(400);
+  logLine(log,'c-in',`Email sent → admin@adepttech.co.ke: ${ok} OK, ${du} dup, ${er} err`);
+  fill.style.width='100%';fill.style.background=er?'var(--am)':'var(--gr)';
+  lbl.textContent=`Done — ${ok} uploaded, ${du} duplicates, ${er} errors`;
+  bdg.innerHTML=`${badge('b-ok',ok+' OK')} ${badge('b-du',du+' dup')} ${badge('b-er',er+' err')} ${badge('b-bl','ptr → '+ptr)}`;
+  document.getElementById('m-today').textContent=String(ok);
+  document.getElementById('m-tot').textContent=String(41+ok);
+  document.getElementById('m-err').textContent=String(1+er);
+  document.getElementById('st-tot').textContent=String(41+ok);
+  document.getElementById('st-err').textContent=String(1+er);
+  const now=new Date().toLocaleString('en-KE',{timeZone:'Africa/Nairobi'});
+  document.getElementById('s-lu').textContent=now+' EAT';
+  logLine(document.getElementById('status-log'),'c-ok',`[upload] complete — ${ok} OK, ${du} dup, ${er} err. Pointer: 43→${ptr}`);
+  document.getElementById('reset-btn').style.display='inline-flex';uploading=false;
+}
+
+function resetUpload(){
+  buildSheet(false);setNode(-1);
+  document.getElementById('upload-btn').disabled=false;
+  document.getElementById('reset-btn').style.display='none';
+  document.getElementById('upload-prog').style.display='none';
+  document.getElementById('upload-fill').style.cssText='width:0%;background:var(--ac)';
+  document.getElementById('upload-log').innerHTML='<div class="le"><span class="log-ts">—</span><span class="c-in">Click "Run upload now" to simulate the upload.</span></div>';
+  document.getElementById('result-badges').innerHTML='';
+  document.getElementById('m-ptr').textContent='43';document.getElementById('m-today').textContent='0';
+  document.getElementById('m-tot').textContent='41';document.getElementById('m-err').textContent='1';
+  document.getElementById('st-ptr').textContent='43';document.getElementById('st-tot').textContent='41';document.getElementById('st-err').textContent='1';
+  uploading=false;
+}
+
+function fireAPI(scenario){
+  const phone=document.getElementById('a-phone').value.replace(/\D/g,'');
+  const name=document.getElementById('a-name').value;
+  const url=`http://192.168.1.13/vicidial/non_agent_api.php?function=add_lead&phone_number=${phone}&phone_code=254&list_id=101&campaign_id=BUSARA2025&duplicate_check=DUPLIST&list_exists_check=Y&first_name=${encodeURIComponent(name)}&user=busara_api&pass=****&source=busara_auto`;
+  let resp,cls,bclass;
+  if(scenario==='ok'){resp=`SUCCESS: add_lead LEAD HAS BEEN ADDED - ${phone}|busara_auto|101|193729|-0\nNOTICE: add_lead ADDED TO HOPPER - ${phone}|busara_auto|193729|101`;cls='success';bclass='b-ok';}
+  else if(scenario==='dup'){resp=`ERROR: add_lead DUPLICATE PHONE NUMBER IN LIST - ${phone}|101|193690`;cls='duplicate';bclass='b-du';}
+  else{resp=`ERROR: add_lead INVALID PHONE NUMBER LENGTH - ${phone}|busara_auto`;cls='error';bclass='b-er';}
+  const status=scenario==='ok'?'SUCCESS':scenario==='dup'?'DUPLICATE':'ERROR';
+  document.getElementById('api-out').innerHTML=`
+    <div class="api-block info"><div class="api-lbl">request URL</div>${url.replace(/&/g,'<br>&nbsp;&nbsp;&amp;')}</div>
+    <div class="api-block ${cls}"><div class="api-lbl">response &nbsp;${badge(bclass,status)}</div>${resp.replace(/\n/g,'<br>')}</div>`;
+}
+
+async function runReport(){
+  const btn=document.getElementById('rpt-btn');
+  btn.disabled=true;btn.textContent='Calling API...';
+  await sleep(1400);
+  document.getElementById('rpt-out').style.display='block';
+  btn.textContent='Done';
+  const now=new Date().toLocaleString('en-KE',{timeZone:'Africa/Nairobi'});
+  document.getElementById('s-lr').textContent=now+' EAT';
+}
+
+const td=new Date().toISOString().slice(0,10);
+document.getElementById('r-from').textContent=td;
+document.getElementById('r-to').textContent=td;
+</script>
+</body>
+</html>
